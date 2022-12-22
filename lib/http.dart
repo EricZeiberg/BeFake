@@ -1,3 +1,4 @@
+import 'package:befake/user.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -67,16 +68,70 @@ class BeRealHTTP {
     }
   }
 
-  Future<String> getUsername() async {
+  Future<bool> refreshToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.containsKey("refresh_token")) {
+      final response = await http.post(
+          Uri.parse("https://securetoken.googleapis.com/v1/token?key$GAPI_KEY"),
+          headers: Headers,
+          body: jsonEncode(<String, String>{
+            "refresh_token": prefs.getString("refresh_token") ?? "",
+            "grant_type": "refresh_token"
+          }));
+      if (response.statusCode == 200) {
+        final res = jsonDecode(response.body);
+        prefs.setString("idToken", res['idToken']);
+        token = res['idToken'];
+        prefs.setString("refresh_token", res['refreshToken']);
+        prefs.setInt(
+            "expiration",
+            DateTime.now()
+                .add(Duration(seconds: int.parse(res['expiresIn'])))
+                .microsecondsSinceEpoch);
+        prefs.setString("user_id", res['localId']);
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+
+  Future<UserProfile> getUserProfile() async {
     final prefs = await SharedPreferences.getInstance();
     final response = await http.get(Uri.parse("$API_URL/person/me"),
         headers: <String, String>{
           "authorization": prefs.getString("idToken") ?? ""
         });
     if (response.statusCode == 200) {
-      return jsonDecode(response.body)['username'];
+      return UserProfile().FromJson(jsonDecode(response.body));
     } else {
-      return "Error";
+      return UserProfile();
     }
+  }
+
+  Future<void> logOut() async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setString("idToken", "");
+    prefs.setString("refresh_token", "");
+    prefs.setInt("expiration", 0);
+    prefs.setString("user_id", "");
+    prefs.setString("phone", "");
+  }
+
+  Future<bool> checkLogIn() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.containsKey("idToken") && prefs.getString("idToken") != "") {
+      var timeNow = DateTime.now().microsecondsSinceEpoch;
+      if (prefs.containsKey("expiresIn")) {
+        if (timeNow >= (prefs.getInt("expiresIn") ?? 0)) {
+          prefs.setString("idToken", "");
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
   }
 }
