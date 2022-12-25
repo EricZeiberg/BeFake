@@ -20,6 +20,7 @@ class _PostWidgetState extends State<PostWidget> with WidgetsBindingObserver {
   UserProfile profile = UserProfile();
   BeRealHTTP API = BeRealHTTP();
   List<UserProfile> friends = [];
+  bool isUploading = false;
 
   @override
   void initState() {
@@ -98,20 +99,21 @@ class _PostWidgetState extends State<PostWidget> with WidgetsBindingObserver {
   }
 
   void OpenPhotoDialog() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-    );
-    if (result != null) {
-      File file = File(result.files.single.path!);
+    FilePickerResult? result = await FilePicker.platform
+        .pickFiles(type: FileType.image, allowMultiple: true);
+
+    if (result != null && result.files.length == 2) {
+      File primary = File(result.files.first.path!);
+      File secondary = File(result.files.last.path!);
       showDialog(
           context: context,
           builder: (BuildContext context) {
-            return buildPostPhotoDialog(file);
+            return buildPostPhotoDialog(primary, secondary);
           });
     }
   }
 
-  Widget buildPostPhotoDialog(File file) {
+  Widget buildPostPhotoDialog(File primary, File secondary) {
     return Dialog(
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
@@ -120,18 +122,64 @@ class _PostWidgetState extends State<PostWidget> with WidgetsBindingObserver {
           child: ListView(
             shrinkWrap: true,
             children: [
-              Image.file(file),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Flexible(
+                    child: Column(
+                      children: [
+                        Image.file(primary),
+                        const SizedBox(
+                          height: 5,
+                        ),
+                        const Text("Primary")
+                      ],
+                    ),
+                  ),
+                  const SizedBox(
+                    width: 5,
+                  ),
+                  Flexible(
+                    child: Column(
+                      children: [
+                        Image.file(secondary),
+                        const SizedBox(
+                          height: 5,
+                        ),
+                        const Text("Secondary")
+                      ],
+                    ),
+                  ),
+                ],
+              ),
               ElevatedButton(
-                onPressed: (() => PostPhoto(file)),
-                child: const Text("Upload"),
-              )
+                onPressed: () async {
+                  setState(() {
+                    isUploading = true;
+                  });
+                  await API.CreatePost(
+                      primary, secondary, profile.userId ?? "");
+                  setState(() {
+                    isUploading = false;
+                  });
+                },
+                child: Text(getLoadingIndicator()),
+              ),
             ],
           ),
         ));
   }
 
-  void PostPhoto(File f) {
-    API.uploadPhoto(f, profile.userId ?? "");
+  String getLoadingIndicator() {
+    if (isUploading) {
+      return "Uploading...";
+    } else {
+      return "Create Post";
+    }
+  }
+
+  void PostPhoto(File primary, File secondary) {
+    API.CreatePost(primary, secondary, profile.userId ?? "");
   }
 
   Widget buildImage(String? url, double? w, double? h) {

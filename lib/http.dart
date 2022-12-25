@@ -159,7 +159,7 @@ class BeRealHTTP {
     return false;
   }
 
-  Future<String?> uploadPhoto(File file, String userID) async {
+  Future<String?> UploadPhoto(File file, String userID) async {
     Uint8List fileBytes = file.readAsBytesSync();
     String length = fileBytes.length.toString();
     var uuid = const Uuid();
@@ -199,9 +199,54 @@ class BeRealHTTP {
         final photoPut = await http.put(Uri.parse(upload_url),
             headers: upload_headers, body: fileBytes);
         if (photoPut.statusCode == 200) {
-          print(jsonDecode(photoPut.body));
+          var json = jsonDecode(photoPut.body);
+          print(json);
+          return "https://${json['bucket']}/${json['name']}";
         }
       }
+    }
+  }
+
+  Future<bool> CreatePost(File primary, File secondary, String userID) async {
+    var primaryURL = await UploadPhoto(primary, userID);
+    var secondaryURL = await UploadPhoto(secondary, userID);
+    final prefs = await SharedPreferences.getInstance();
+    DateTime now = DateTime.now();
+
+    String convertedDateTime =
+        "${now.year.toString()}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}T${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}Z";
+    var json_data = {
+      "isPublic": false,
+      "isLate": false,
+      "retakeCounter": 0,
+      "takenAt": convertedDateTime,
+      "location": {"latitude": "0", "longitude": "0"},
+      "caption": "Insert caption here",
+      "backCamera": {
+        "bucket": "storage.bere.al",
+        "height": 2000,
+        "width": 1500,
+        "path": primaryURL?.replaceFirst("https://storage.bere.al/", ""),
+      },
+      "frontCamera": {
+        "bucket": "storage.bere.al",
+        "height": 2000,
+        "width": 1500,
+        "path": secondaryURL?.replaceFirst("https://storage.bere.al/", ""),
+      },
+    };
+
+    final response = await http.post(Uri.parse("$API_URL/content/post"),
+        headers: <String, String>{
+          "authorization": prefs.getString("idToken") ?? "",
+          "content-type": "application/json"
+        },
+        body: jsonEncode(json_data));
+    if (response.statusCode == 200) {
+      print(jsonDecode(response.body));
+      return true;
+    } else {
+      return false;
     }
   }
 }
