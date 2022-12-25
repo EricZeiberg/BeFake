@@ -1,8 +1,13 @@
+import 'dart:io';
+
 import 'package:befake/user.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:uuid/uuid.dart';
 
 const String GAPI_KEY = "AIzaSyDwjfEeparokD7sXPVQli9NsTuhT6fJ6iA";
 const String API_URL = "https://mobile.bereal.com/api";
@@ -72,7 +77,8 @@ class BeRealHTTP {
     final prefs = await SharedPreferences.getInstance();
     if (prefs.containsKey("refresh_token")) {
       final response = await http.post(
-          Uri.parse("https://securetoken.googleapis.com/v1/token?key$GAPI_KEY"),
+          Uri.parse(
+              "https://securetoken.googleapis.com/v1/token?key=$GAPI_KEY"),
           headers: Headers,
           body: jsonEncode(<String, String>{
             "refresh_token": prefs.getString("refresh_token") ?? "",
@@ -80,15 +86,15 @@ class BeRealHTTP {
           }));
       if (response.statusCode == 200) {
         final res = jsonDecode(response.body);
-        prefs.setString("idToken", res['idToken']);
-        token = res['idToken'];
-        prefs.setString("refresh_token", res['refreshToken']);
+        prefs.setString("idToken", res['id_token']);
+        token = res['id_token'];
+        prefs.setString("refresh_token", res['refresh_token']);
         prefs.setInt(
             "expiration",
             DateTime.now()
-                .add(Duration(seconds: int.parse(res['expiresIn'])))
+                .add(Duration(seconds: int.parse(res['expires_in'])))
                 .microsecondsSinceEpoch);
-        prefs.setString("user_id", res['localId']);
+        prefs.setString("user_id", res['user_id']);
         return true;
       } else {
         return false;
@@ -99,6 +105,7 @@ class BeRealHTTP {
   }
 
   Future<UserProfile> getUserProfile() async {
+    refreshToken();
     final prefs = await SharedPreferences.getInstance();
     final response = await http.get(Uri.parse("$API_URL/person/me"),
         headers: <String, String>{
@@ -109,6 +116,23 @@ class BeRealHTTP {
     } else {
       return UserProfile();
     }
+  }
+
+  Future<List<UserProfile>> getFriends() async {
+    List<UserProfile> friends = [];
+    refreshToken();
+    final prefs = await SharedPreferences.getInstance();
+    final response = await http.get(Uri.parse("$API_URL/relationships/friends"),
+        headers: <String, String>{
+          "authorization": prefs.getString("idToken") ?? ""
+        });
+    if (response.statusCode == 200) {
+      List json = jsonDecode(response.body)['data'];
+      for (var obj in json) {
+        friends.add(UserProfile().FriendFromJson(obj));
+      }
+    }
+    return friends;
   }
 
   Future<void> logOut() async {
@@ -133,5 +157,51 @@ class BeRealHTTP {
       return true;
     }
     return false;
+  }
+
+  Future<String?> uploadPhoto(File file, String userID) async {
+    Uint8List fileBytes = file.readAsBytesSync();
+    String length = fileBytes.length.toString();
+    var uuid = const Uuid();
+    var name =
+        "Photos/$userID/bereal/${uuid.v4()}-${DateTime.now().millisecondsSinceEpoch}.webp";
+    var json_data = <String, dynamic>{
+      "cacheControl": "public,max-age=172800",
+      "contentType": "image/webp",
+      "metadata": {"type": "bereal"},
+      "name": name,
+    };
+    var headers = <String, String>{
+      "x-goog-upload-protocol": "resumable",
+      "x-goog-upload-command": "start",
+      "x-firebase-storage-version": "ios/9.4.0",
+      "x-goog-upload-content-type": "image/webp",
+      "Authorization": "Firebase $token",
+      "x-goog-upload-content-length": length,
+      "content-type": "application/json",
+      "x-firebase-gmpid": "1:405768487586:ios:28c4df089ca92b89",
+    };
+
+    var uri =
+        "https://firebasestorage.googleapis.com/v0/b/storage.bere.al/o/${Uri.encodeComponent(name)}?uploadType=resumable&name=$name";
+
+    final response = await http.post(Uri.parse(uri),
+        headers: headers, body: jsonEncode(json_data));
+    if (response.statusCode == 200) {
+      var upload_url = response.headers['x-goog-upload-url'];
+      var upload_headers = <String, String>{
+        "x-goog-upload-command": "upload, finalize",
+        "x-goog-upload-protocol": "resumable",
+        "x-goog-upload-offset": "0",
+        "content-type": "image/jpeg",
+      };
+      if (upload_url != null) {
+        final photoPut = await http.put(Uri.parse(upload_url),
+            headers: upload_headers, body: fileBytes);
+        if (photoPut.statusCode == 200) {
+          print(jsonDecode(photoPut.body));
+        }
+      }
+    }
   }
 }
