@@ -249,4 +249,10 @@ class BeRealHTTP {
       return false;
     }
   }
+
+  Future<void> TestNetwork() async {
+    await Future.delayed(const Duration(seconds: 4));
+    print("test method print");
+    await Future.delayed(const Duration(seconds: 4));
+  }
 }

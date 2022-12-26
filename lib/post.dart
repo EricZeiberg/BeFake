@@ -9,14 +9,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/container.dart';
 import 'package:flutter/src/widgets/framework.dart';
 
-class PostWidget extends StatefulWidget {
-  const PostWidget({super.key});
+class HomeWidget extends StatefulWidget {
+  const HomeWidget({super.key});
 
   @override
-  State<PostWidget> createState() => _PostWidgetState();
+  State<HomeWidget> createState() => _HomeWidgetState();
 }
 
-class _PostWidgetState extends State<PostWidget> with WidgetsBindingObserver {
+class _HomeWidgetState extends State<HomeWidget> with WidgetsBindingObserver {
   UserProfile profile = UserProfile();
   BeRealHTTP API = BeRealHTTP();
   List<UserProfile> friends = [];
@@ -64,6 +64,7 @@ class _PostWidgetState extends State<PostWidget> with WidgetsBindingObserver {
             body: Padding(
               padding: const EdgeInsets.all(15.0),
               child: ListView(children: [
+                if (isUploading) ...{getUploadingWidget()},
                 Center(
                   child: Stack(
                     children: [
@@ -108,12 +109,13 @@ class _PostWidgetState extends State<PostWidget> with WidgetsBindingObserver {
       showDialog(
           context: context,
           builder: (BuildContext context) {
-            return buildPostPhotoDialog(primary, secondary);
+            return buildPostPhotoDialog(primary, secondary, context);
           });
     }
   }
 
-  Widget buildPostPhotoDialog(File primary, File secondary) {
+  Widget buildPostPhotoDialog(
+      File primary, File secondary, BuildContext context) {
     return Dialog(
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
@@ -157,25 +159,42 @@ class _PostWidgetState extends State<PostWidget> with WidgetsBindingObserver {
                   setState(() {
                     isUploading = true;
                   });
-                  await API.CreatePost(
-                      primary, secondary, profile.userId ?? "");
-                  setState(() {
-                    isUploading = false;
-                  });
+                  Navigator.of(context, rootNavigator: true).pop();
+                  //await API.CreatePost(
+                  //  primary, secondary, profile.userId ?? "");
+                  await API.TestNetwork().whenComplete(() => setState(() {
+                        isUploading = false;
+                      }));
                 },
-                child: Text(getLoadingIndicator()),
+                child: const Text("Post"),
               ),
             ],
           ),
         ));
   }
 
-  String getLoadingIndicator() {
-    if (isUploading) {
-      return "Uploading...";
-    } else {
-      return "Create Post";
-    }
+  Widget getUploadingWidget() {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        children: [
+          Row(
+            children: const [
+              CircularProgressIndicator(),
+              SizedBox(
+                width: 10,
+              ),
+              Text("Uploading post...", style: TextStyle(fontSize: 18)),
+            ],
+          ),
+          const Divider(
+            height: 15,
+            thickness: 1,
+            color: Colors.grey,
+          ),
+        ],
+      ),
+    );
   }
 
   void PostPhoto(File primary, File secondary) {

@@ -29,7 +29,7 @@ class _MyAppState extends State<MyApp> {
           if (snapshot.hasData) {
             var isLoggedIn = snapshot.data;
             if (isLoggedIn ?? false) {
-              return const PostWidget();
+              return const HomeWidget();
             } else {
               return const LoginPage();
             }

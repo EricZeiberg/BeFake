@@ -71,7 +71,7 @@ class _LoginPageState extends State<LoginPage> {
       bool send2FACode = await API.send2FACode(authCodeController.text);
       if (send2FACode) {
         Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (context) => const PostWidget()));
+            MaterialPageRoute(builder: (context) => const HomeWidget()));
       } else {
         setState(() {
           is2FAVisible = false;
