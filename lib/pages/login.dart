@@ -3,7 +3,7 @@ import 'package:flutter/src/widgets/framework.dart';
 
 import 'package:flutter/material.dart';
 import 'package:befake/http.dart';
-import 'package:befake/post.dart';
+import 'package:befake/pages/post.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -71,7 +71,7 @@ class _LoginPageState extends State<LoginPage> {
       bool send2FACode = await API.send2FACode(authCodeController.text);
       if (send2FACode) {
         Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (context) => const HomeWidget()));
+            MaterialPageRoute(builder: (context) => const PostWidget()));
       } else {
         setState(() {
           is2FAVisible = false;

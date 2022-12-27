@@ -1,6 +1,7 @@
 import 'dart:io';
 
-import 'package:befake/user.dart';
+import 'package:befake/postmodel.dart';
+import 'package:befake/userprofile.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -157,6 +158,27 @@ class BeRealHTTP {
       return true;
     }
     return false;
+  }
+
+  Future<List<Post>> GetFeed() async {
+    refreshToken();
+    List<UserProfile> friends = await getFriends();
+    List<Post> posts = [];
+    final response = await http.get(Uri.parse("$API_URL/feeds/friends"),
+        headers: <String, String>{"authorization": token});
+    if (response.statusCode == 200) {
+      List json = jsonDecode(response.body);
+      for (var postObj in json) {
+        var post = Post().FromJson(postObj);
+        for (var friend in friends) {
+          if (friend.userId == post.userID) {
+            post.SetUserProfile(friend);
+          }
+        }
+        posts.add(post);
+      }
+    }
+    return posts;
   }
 
   Future<String?> UploadPhoto(File file, String userID) async {

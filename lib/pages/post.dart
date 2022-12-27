@@ -1,22 +1,25 @@
 import 'dart:io';
 
 import 'package:befake/http.dart';
-import 'package:befake/login.dart';
-import 'package:befake/user.dart';
+import 'package:befake/pages/feed.dart';
+import 'package:befake/pages/login.dart';
+import 'package:befake/userprofile.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/container.dart';
 import 'package:flutter/src/widgets/framework.dart';
 
-class HomeWidget extends StatefulWidget {
-  const HomeWidget({super.key});
+import '../utils.dart';
+
+class PostWidget extends StatefulWidget {
+  const PostWidget({super.key});
 
   @override
-  State<HomeWidget> createState() => _HomeWidgetState();
+  State<PostWidget> createState() => _PostWidgetState();
 }
 
-class _HomeWidgetState extends State<HomeWidget> with WidgetsBindingObserver {
+class _PostWidgetState extends State<PostWidget> with WidgetsBindingObserver {
   UserProfile profile = UserProfile();
   BeRealHTTP API = BeRealHTTP();
   List<UserProfile> friends = [];
@@ -52,51 +55,31 @@ class _HomeWidgetState extends State<HomeWidget> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-        home: Scaffold(
-            floatingActionButton: FloatingActionButton.extended(
-              onPressed: (() => SignOut(context)),
-              label: const Text("Sign Out"),
-            ),
-            appBar: AppBar(
-                backgroundColor: Colors.transparent,
-                title: const Text("BeFake.")),
-            body: Padding(
-              padding: const EdgeInsets.all(15.0),
-              child: ListView(children: [
-                if (isUploading) ...{getUploadingWidget()},
-                Center(
-                  child: Stack(
-                    children: [
-                      buildImage(profile.profilePicURL, 120, 120),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                buildName(),
-                ElevatedButton(
-                    onPressed: OpenPhotoDialog,
-                    child: const Text("Post Photo")),
-                const Divider(
-                  height: 15,
-                  thickness: 1,
-                  indent: 20,
-                  endIndent: 0,
-                  color: Colors.grey,
-                ),
-                ListView.builder(
-                  itemBuilder: buildFriendListTile,
-                  itemCount: friends.length,
-                  shrinkWrap: true,
-                )
-              ]),
-            )));
-  }
-
-  void SignOut(BuildContext context) {
-    API.logOut();
-    Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const LoginPage()));
+    return Scaffold(
+        body: Padding(
+      padding: const EdgeInsets.all(15.0),
+      child: ListView(children: [
+        if (isUploading) ...{getUploadingWidget()},
+        Center(
+          child: Stack(
+            children: [
+              Utils.buildImage(profile.profilePicURL, 120, 120),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        buildName(),
+        ElevatedButton(
+            onPressed: OpenPhotoDialog, child: const Text("Post Photo")),
+        const Divider(
+          height: 15,
+          thickness: 1,
+          indent: 20,
+          endIndent: 0,
+          color: Colors.grey,
+        ),
+      ]),
+    ));
   }
 
   void OpenPhotoDialog() async {
@@ -201,29 +184,6 @@ class _HomeWidgetState extends State<HomeWidget> with WidgetsBindingObserver {
     API.CreatePost(primary, secondary, profile.userId ?? "");
   }
 
-  Widget buildImage(String? url, double? w, double? h) {
-    Widget image;
-    if (url == null) {
-      image = Image(
-        image: const AssetImage("assets/gray.png"),
-        width: w,
-        height: h,
-      );
-    } else {
-      image = CachedNetworkImage(
-        imageUrl: url,
-        placeholder: ((context, url) => const CircularProgressIndicator()),
-        fit: BoxFit.cover,
-        width: w,
-        height: h,
-      );
-    }
-
-    return ClipOval(
-      child: Material(color: Colors.transparent, child: image),
-    );
-  }
-
   Widget buildName() => Column(
         children: [
           Text(
@@ -247,7 +207,7 @@ class _HomeWidgetState extends State<HomeWidget> with WidgetsBindingObserver {
     for (var map in profile.emojiReactImages.entries) {
       widgets.add(Column(
         children: [
-          buildImage(map.value, 50, 50),
+          Utils.buildImage(map.value, 50, 50),
           const SizedBox(
             height: 1,
           ),
@@ -259,15 +219,5 @@ class _HomeWidgetState extends State<HomeWidget> with WidgetsBindingObserver {
       ));
     }
     return widgets;
-  }
-
-  Widget buildFriendListTile(BuildContext context, int index) {
-    var friend = friends[index];
-    return ListTile(
-      leading:
-          Hero(tag: index, child: buildImage(friend.profilePicURL, 50, 50)),
-      title: Text(friend.fullName ?? ""),
-      subtitle: Text(friend.username ?? ""),
-    );
   }
 }

@@ -19,6 +19,7 @@ class UserProfile {
   UserProfile FriendFromJson(Map<String, dynamic> json) {
     username = json['username'];
     fullName = json['fullname'];
+    userId = json['id'];
     try {
       profilePicURL = json['profilePicture']['url'];
     } on NoSuchMethodError {

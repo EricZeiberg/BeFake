@@ -1,6 +1,7 @@
 import 'package:befake/http.dart';
-import 'package:befake/login.dart';
-import 'package:befake/post.dart';
+import 'package:befake/pages/login.dart';
+import 'package:befake/pages/post.dart';
+import 'package:befake/pages/tabview.dart';
 import 'package:flutter/material.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -29,7 +30,7 @@ class _MyAppState extends State<MyApp> {
           if (snapshot.hasData) {
             var isLoggedIn = snapshot.data;
             if (isLoggedIn ?? false) {
-              return const HomeWidget();
+              return const TabView();
             } else {
               return const LoginPage();
             }
