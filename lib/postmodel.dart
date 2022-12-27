@@ -1,4 +1,5 @@
 import 'package:befake/userprofile.dart';
+import 'package:befake/utils.dart';
 
 class Post {
   UserProfile? user;
@@ -8,9 +9,13 @@ class Post {
   bool isLate = false;
 
   Post FromJson(Map<String, dynamic> json) {
-    primaryPhotoURL = json['photoURL'];
-    secondaryPhotoURL = json['secondaryPhotoURL'];
+    primaryPhotoURL = "${Utils.GetProxyString()}/" + json['photoURL'];
+    secondaryPhotoURL =
+        "${Utils.GetProxyString()}/" + json['secondaryPhotoURL'];
     userID = json['ownerID'];
+    if (json['mediaType'] == "late") {
+      isLate = true;
+    }
     return this;
   }
 

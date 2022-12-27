@@ -2,6 +2,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 class Utils {
+  static String PROXY_PREFIX = "https://secure-meadow-72219.herokuapp.com";
+
+  static String GetProxyString() {
+    return PROXY_PREFIX;
+  }
+
   static Widget buildImage(String? url, double? w, double? h) {
     Widget image;
     if (url == null) {

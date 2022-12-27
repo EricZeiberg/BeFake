@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:befake/postmodel.dart';
 import 'package:befake/userprofile.dart';
+import 'package:befake/utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -11,7 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 const String GAPI_KEY = "AIzaSyDwjfEeparokD7sXPVQli9NsTuhT6fJ6iA";
-const String API_URL = "https://mobile.bereal.com/api";
+String API_URL = "${Utils.GetProxyString()}/https://mobile.bereal.com/api";
 final Headers = <String, String>{
   "user-agent": "BeReal/0.25.1 (iPhone; iOS 16.0.2; Scale/2.00)",
   "x-ios-bundle-identifier": "AlexisBarreyat.BeReal",
@@ -20,11 +21,12 @@ final Headers = <String, String>{
 class BeRealHTTP {
   static String otp_sessionInfo = "";
   static String token = "";
+  static UserProfile? Me;
 
   Future<bool> request2FACode(String number) async {
     final response = await http.post(
       Uri.parse(
-          'https://www.googleapis.com/identitytoolkit/v3/relyingparty/sendVerificationCode?key=$GAPI_KEY'),
+          '${Utils.GetProxyString()}/https://www.googleapis.com/identitytoolkit/v3/relyingparty/sendVerificationCode?key=$GAPI_KEY'),
       headers: Headers,
       body: jsonEncode(<String, String>{
         "phoneNumber": "+1$number",
@@ -44,7 +46,7 @@ class BeRealHTTP {
     if (otp_sessionInfo != "") {
       final response = await http.post(
         Uri.parse(
-            'https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPhoneNumber?key=$GAPI_KEY'),
+            '${Utils.GetProxyString()}/https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPhoneNumber?key=$GAPI_KEY'),
         headers: Headers,
         body: jsonEncode(<String, String>{
           "sessionInfo": otp_sessionInfo,
@@ -79,7 +81,7 @@ class BeRealHTTP {
     if (prefs.containsKey("refresh_token")) {
       final response = await http.post(
           Uri.parse(
-              "https://securetoken.googleapis.com/v1/token?key=$GAPI_KEY"),
+              "${Utils.GetProxyString()}/https://securetoken.googleapis.com/v1/token?key=$GAPI_KEY"),
           headers: Headers,
           body: jsonEncode(<String, String>{
             "refresh_token": prefs.getString("refresh_token") ?? "",
@@ -108,12 +110,14 @@ class BeRealHTTP {
   Future<UserProfile> getUserProfile() async {
     refreshToken();
     final prefs = await SharedPreferences.getInstance();
-    final response = await http.get(Uri.parse("$API_URL/person/me"),
-        headers: <String, String>{
-          "authorization": prefs.getString("idToken") ?? ""
-        });
+    final response = await http
+        .get(Uri.parse("$API_URL/person/me"), headers: <String, String>{
+      "authorization": prefs.getString("idToken") ?? "",
+    });
     if (response.statusCode == 200) {
-      return UserProfile().FromJson(jsonDecode(response.body));
+      UserProfile fromJson = UserProfile().FromJson(jsonDecode(response.body));
+      Me = fromJson;
+      return fromJson;
     } else {
       return UserProfile();
     }
@@ -125,7 +129,7 @@ class BeRealHTTP {
     final prefs = await SharedPreferences.getInstance();
     final response = await http.get(Uri.parse("$API_URL/relationships/friends"),
         headers: <String, String>{
-          "authorization": prefs.getString("idToken") ?? ""
+          "authorization": prefs.getString("idToken") ?? "",
         });
     if (response.statusCode == 200) {
       List json = jsonDecode(response.body)['data'];
@@ -170,6 +174,9 @@ class BeRealHTTP {
       List json = jsonDecode(response.body);
       for (var postObj in json) {
         var post = Post().FromJson(postObj);
+        if (post.userID == Me?.userId) {
+          continue;
+        }
         for (var friend in friends) {
           if (friend.userId == post.userID) {
             post.SetUserProfile(friend);
@@ -181,8 +188,7 @@ class BeRealHTTP {
     return posts;
   }
 
-  Future<String?> UploadPhoto(File file, String userID) async {
-    Uint8List fileBytes = file.readAsBytesSync();
+  Future<String?> UploadPhoto(Uint8List fileBytes, String userID) async {
     String length = fileBytes.length.toString();
     var uuid = const Uuid();
     var name =
@@ -205,7 +211,7 @@ class BeRealHTTP {
     };
 
     var uri =
-        "https://firebasestorage.googleapis.com/v0/b/storage.bere.al/o/${Uri.encodeComponent(name)}?uploadType=resumable&name=$name";
+        "${Utils.GetProxyString()}/https://firebasestorage.googleapis.com/v0/b/storage.bere.al/o/${Uri.encodeComponent(name)}?uploadType=resumable&name=$name";
 
     final response = await http.post(Uri.parse(uri),
         headers: headers, body: jsonEncode(json_data));
@@ -223,13 +229,14 @@ class BeRealHTTP {
         if (photoPut.statusCode == 200) {
           var json = jsonDecode(photoPut.body);
           print(json);
-          return "https://${json['bucket']}/${json['name']}";
+          return "${Utils.GetProxyString()}/https://${json['bucket']}/${json['name']}";
         }
       }
     }
   }
 
-  Future<bool> CreatePost(File primary, File secondary, String userID) async {
+  Future<bool> CreatePost(
+      Uint8List primary, Uint8List secondary, String userID) async {
     var primaryURL = await UploadPhoto(primary, userID);
     var secondaryURL = await UploadPhoto(secondary, userID);
     final prefs = await SharedPreferences.getInstance();
@@ -248,20 +255,22 @@ class BeRealHTTP {
         "bucket": "storage.bere.al",
         "height": 2000,
         "width": 1500,
-        "path": primaryURL?.replaceFirst("https://storage.bere.al/", ""),
+        "path": primaryURL?.replaceFirst(
+            "${Utils.GetProxyString()}/https://storage.bere.al/", ""),
       },
       "frontCamera": {
         "bucket": "storage.bere.al",
         "height": 2000,
         "width": 1500,
-        "path": secondaryURL?.replaceFirst("https://storage.bere.al/", ""),
+        "path": secondaryURL?.replaceFirst(
+            "${Utils.GetProxyString()}/https://storage.bere.al/", ""),
       },
     };
 
     final response = await http.post(Uri.parse("$API_URL/content/post"),
         headers: <String, String>{
           "authorization": prefs.getString("idToken") ?? "",
-          "content-type": "application/json"
+          "content-type": "application/json",
         },
         body: jsonEncode(json_data));
     if (response.statusCode == 200) {

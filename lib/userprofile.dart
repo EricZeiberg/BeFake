@@ -1,3 +1,5 @@
+import 'package:befake/utils.dart';
+
 class UserProfile {
   String? username;
   String? fullName;
@@ -9,9 +11,11 @@ class UserProfile {
     username = json['username'];
     fullName = json['fullname'];
     userId = json['id'];
-    profilePicURL = json['profilePicture']['url'];
+    profilePicURL =
+        "${Utils.GetProxyString()}/" + json['profilePicture']['url'];
     for (var emoji in json['realmojis']) {
-      emojiReactImages.putIfAbsent(emoji['emoji'], () => emoji['media']['url']);
+      emojiReactImages.putIfAbsent(emoji['emoji'],
+          () => "${Utils.GetProxyString()}/" + emoji['media']['url']);
     }
     return this;
   }
@@ -21,7 +25,8 @@ class UserProfile {
     fullName = json['fullname'];
     userId = json['id'];
     try {
-      profilePicURL = json['profilePicture']['url'];
+      profilePicURL =
+          "${Utils.GetProxyString()}/" + json['profilePicture']['url'];
     } on NoSuchMethodError {
       return this;
     }

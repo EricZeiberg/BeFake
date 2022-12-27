@@ -37,6 +37,7 @@ dependencies:
   file_picker: ^5.2.4
   uuid: ^3.0.6
   intl: ^0.18.0
+  image_downloader: ^0.31.0
 
 
   # The following adds the Cupertino Icons font to your application.

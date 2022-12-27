@@ -6,6 +6,7 @@ import 'package:befake/pages/login.dart';
 import 'package:befake/userprofile.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/container.dart';
 import 'package:flutter/src/widgets/framework.dart';
@@ -87,8 +88,8 @@ class _PostWidgetState extends State<PostWidget> with WidgetsBindingObserver {
         .pickFiles(type: FileType.image, allowMultiple: true);
 
     if (result != null && result.files.length == 2) {
-      File primary = File(result.files.first.path!);
-      File secondary = File(result.files.last.path!);
+      Uint8List primary = result.files.first.bytes!;
+      Uint8List secondary = result.files.last.bytes!;
       showDialog(
           context: context,
           builder: (BuildContext context) {
@@ -98,7 +99,7 @@ class _PostWidgetState extends State<PostWidget> with WidgetsBindingObserver {
   }
 
   Widget buildPostPhotoDialog(
-      File primary, File secondary, BuildContext context) {
+      Uint8List primary, Uint8List secondary, BuildContext context) {
     return Dialog(
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
@@ -113,7 +114,7 @@ class _PostWidgetState extends State<PostWidget> with WidgetsBindingObserver {
                   Flexible(
                     child: Column(
                       children: [
-                        Image.file(primary),
+                        Image.memory(primary),
                         const SizedBox(
                           height: 5,
                         ),
@@ -127,7 +128,7 @@ class _PostWidgetState extends State<PostWidget> with WidgetsBindingObserver {
                   Flexible(
                     child: Column(
                       children: [
-                        Image.file(secondary),
+                        Image.memory(secondary),
                         const SizedBox(
                           height: 5,
                         ),
@@ -143,11 +144,10 @@ class _PostWidgetState extends State<PostWidget> with WidgetsBindingObserver {
                     isUploading = true;
                   });
                   Navigator.of(context, rootNavigator: true).pop();
-                  //await API.CreatePost(
-                  //  primary, secondary, profile.userId ?? "");
-                  await API.TestNetwork().whenComplete(() => setState(() {
-                        isUploading = false;
-                      }));
+                  await API.CreatePost(primary, secondary, profile.userId ?? "")
+                      .whenComplete(() => setState(() {
+                            isUploading = false;
+                          }));
                 },
                 child: const Text("Post"),
               ),
@@ -178,10 +178,6 @@ class _PostWidgetState extends State<PostWidget> with WidgetsBindingObserver {
         ],
       ),
     );
-  }
-
-  void PostPhoto(File primary, File secondary) {
-    API.CreatePost(primary, secondary, profile.userId ?? "");
   }
 
   Widget buildName() => Column(
