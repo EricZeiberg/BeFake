@@ -240,7 +240,7 @@ class BeRealHTTP {
     var primaryURL = await UploadPhoto(primary, userID);
     var secondaryURL = await UploadPhoto(secondary, userID);
     final prefs = await SharedPreferences.getInstance();
-    DateTime now = DateTime.now();
+    DateTime now = DateTime.now().toUtc();
 
     String convertedDateTime =
         "${now.year.toString()}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}T${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}Z";

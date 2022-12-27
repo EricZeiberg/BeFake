@@ -1,12 +1,7 @@
-import 'dart:io';
-
 import 'package:befake/http.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter/src/widgets/container.dart';
-import 'package:flutter/src/widgets/framework.dart';
-import 'package:image_downloader/image_downloader.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../postmodel.dart';
 import '../utils.dart';
@@ -147,22 +142,6 @@ class _FeedObjectWidgetState extends State<FeedObjectWidget> {
   }
 
   Future<void> DownloadImage(BuildContext context, String imageURL) async {
-    try {
-      // Saved with this method.
-      var imageId = await ImageDownloader.downloadImage(imageURL);
-      if (imageId == null) {
-        return;
-      }
-    } on PlatformException catch (error) {
-      print(error);
-      return;
-    }
-    var snackBar = const SnackBar(
-      content: Text('Downloaded'),
-    );
-
-    // Find the ScaffoldMessenger in the widget tree
-    // and use it to show a SnackBar.
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    launchUrl(Uri.parse(imageURL));
   }
 }

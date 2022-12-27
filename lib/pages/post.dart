@@ -85,7 +85,7 @@ class _PostWidgetState extends State<PostWidget> with WidgetsBindingObserver {
 
   void OpenPhotoDialog() async {
     FilePickerResult? result = await FilePicker.platform
-        .pickFiles(type: FileType.image, allowMultiple: true);
+        .pickFiles(type: FileType.image, allowMultiple: true, withData: true);
 
     if (result != null && result.files.length == 2) {
       Uint8List primary = result.files.first.bytes!;

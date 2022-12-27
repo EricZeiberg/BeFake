@@ -1,3 +1,4 @@
+import 'package:befake/pages/tabview.dart';
 import 'package:flutter/src/widgets/container.dart';
 import 'package:flutter/src/widgets/framework.dart';
 
@@ -70,8 +71,8 @@ class _LoginPageState extends State<LoginPage> {
     if (is2FAVisible) {
       bool send2FACode = await API.send2FACode(authCodeController.text);
       if (send2FACode) {
-        Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (context) => const PostWidget()));
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (context) => const TabView()));
       } else {
         setState(() {
           is2FAVisible = false;
