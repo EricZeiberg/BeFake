@@ -1,16 +1,10 @@
-# befake
+# BeFake
 
-A new Flutter project.
+A Flutter app for performing actions on your BeReal profile
 
-## Getting Started
+## Usage
 
-This project is a starting point for a Flutter application.
+A demo is currently live at: [ericzeiberg.github.io/BeFake](http://ericzeiberg.github.io/BeFake)
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Acknowledgements
+Thanks to [notmarek/BeFake](https://github.com/notmarek/BeFake) for performing the work on reverse engineering the BeReal API. 
